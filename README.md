@@ -8,9 +8,26 @@ Este repositorio contiene la **Tarea 2** del curso de maestría *Deep Learning p
 
 ```bash
 DL-TextGen-TextClass/
-├── PartA/   # Generación de letras de canciones
-├── PartB/   # Clasificación de reseñas turísticas
+├── PartA/ # Generación de letras de canciones
+│ ├── data/
+│ ├── src/
+│ ├── models/
+│ ├── results/
+│ ├── logs/
+│ ├── jobs/
+│ └── README_A.md
+│
+├── PartB/ # Clasificación de reseñas turísticas
+│ ├── data/
+│ ├── src/
+│ ├── models/
+│ ├── results/
+│ ├── logs/
+│ ├── jobs/
+│ └── README_B.md (pendiente)
+│
 ├── requirements.txt
+├── environment.yml
 └── README.md
 ```
 
