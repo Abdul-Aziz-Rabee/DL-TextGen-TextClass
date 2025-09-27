@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+logs/
+models/
+results/
+data/*.csv
+data/*.txt
+data/*.json
+!data/canciones_clean.txt
+Context/
