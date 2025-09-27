@@ -1,17 +1,22 @@
 name: tarea2-nlp
 channels:
-  - conda-forge
+  - defaults
+  - pytorch
+  - nvidia
 dependencies:
   - python=3.11
-  - jupyterlab
-  - pandas
-  - numpy
-  - scikit-learn
-  - matplotlib
-  - seaborn
   - pip
+  - pytorch=2.2.2
+  - pytorch-cuda=12.1
+  - numpy =1.25.2
+  - pandas
+  - matplotlib
+  - scikit-learn
+  - seaborn
+  - tqdm
+  - rich
   - pip:
-      - torch
+      - unidecode
       - transformers
       - datasets
       - lyricsgenius
