@@ -33,7 +33,9 @@ class TextGenModel(nn.Module):
         self.rnn = rnn_cls(
             input_size=rnn_input_size,
             hidden_size=hidden_size,
-            batch_first=True
+            num_layers=2,  # Cambia a 2 o más capas
+            batch_first=True,
+            dropout=0.2
         )
         self.fc = nn.Linear(hidden_size, vocab_size)
 
@@ -50,14 +52,18 @@ class TextGenModel(nn.Module):
 # ====================
 # Entrenamiento 
 # ====================
-def train(model, train_loader, val_loader, device, epochs, lr, vocab_size, save_dir, arch, level):
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+def train(model, train_loader, val_loader, device, epochs, lr, vocab_size, save_dir, arch, level, patience=3, idx2token=None, token2idx=None):
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-4)
     criterion = nn.CrossEntropyLoss()
     train_losses, val_losses = [], []
 
     best_val_loss = float('inf')
-    os.makedirs(save_dir, exist_ok=True)
-    log_file = os.path.join(save_dir, f'trainlog_{arch}_{level}.csv')
+    no_improve_epochs = 0  # Contador para Early Stopping
+    # Crear subcarpeta para el modelo
+    model_dir = os.path.join(save_dir, f"{arch}_{level}")
+    os.makedirs(model_dir, exist_ok=True)
+    # Guardar log de entrenamiento
+    log_file = os.path.join(model_dir, f'trainlog_{arch}_{level}.csv')
     with open(log_file, 'w') as f:
         f.write('epoch,train_loss,val_loss\n')
 
@@ -93,12 +99,33 @@ def train(model, train_loader, val_loader, device, epochs, lr, vocab_size, save_
         with open(log_file, 'a') as f:
             f.write(f"{epoch},{avg_train_loss:.4f},{avg_val_loss:.4f}\n")
 
-        # Guardar mejor modelo
+# Guardar mejor modelo
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
+            no_improve_epochs = 0  # Reinicia el contador si hay mejora
             model_path = os.path.join(save_dir, f"{arch}_{level}_best.pt")
-            torch.save(model.state_dict(), model_path)
+            torch.save({
+                'model_state_dict': model.state_dict(),
+                'arch': arch,
+                'embedding_dim': model.rnn.input_size if model.embedding else None,
+                'hidden_size': model.rnn.hidden_size,
+                'num_layers': model.rnn.num_layers,
+                'dropout': model.rnn.dropout,
+                'level': level,
+                'vocab_size': vocab_size,
+                'idx2token': idx2token,
+                'token2idx': token2idx
+            }, model_path)
             print(f"    [INFO] Mejor modelo guardado en {model_path}")
+            print(f"[INFO] Log de entrenamiento guardado en {log_file}")
+        else:
+            no_improve_epochs += 1
+            print(f"    [INFO] No hay mejora en la validación por {no_improve_epochs} época(s).")
+
+        # Early Stopping
+        if no_improve_epochs >= patience:
+            print(f"[INFO] Early stopping activado. No hubo mejora en las últimas {patience} épocas.")
+            break
 
     return train_losses, val_losses
 
@@ -167,25 +194,40 @@ def main():
         ).to(device)
 
         # Entrenamiento
-        train(model, train_loader, val_loader, device, args.epochs, args.lr, vocab_size, args.save_dir, args.arch, args.level)
+        train(model, train_loader, val_loader, device, args.epochs, args.lr, vocab_size, args.save_dir, args.arch, args.level, patience=5, idx2token=idx2token, token2idx=token2idx)
 
     else:
         # Modo generación
+        checkpoint = torch.load(args.model_path, map_location=device)
+
+        # Reconstruir el modelo con los hiperparámetros guardados
         model = TextGenModel(
-            arch=args.arch,
-            vocab_size=vocab_size,
-            embedding_dim=args.embedding_dim,
-            hidden_size=args.hidden_size,
-            level=args.level
+            arch=checkpoint['arch'],
+            vocab_size=checkpoint['vocab_size'],
+            embedding_dim=checkpoint['embedding_dim'],
+            hidden_size=checkpoint['hidden_size'],
+            level=checkpoint['level']
         ).to(device)
-        model.load_state_dict(torch.load(args.model_path, map_location=device))
+
+        # Cargar los pesos del modelo
+        model.load_state_dict(checkpoint['model_state_dict'])
         model.eval()
 
+        # Recuperar idx2token y token2idx
+        idx2token = checkpoint['idx2token']
+        token2idx = checkpoint['token2idx']
+
+        # Crear subcarpeta para los resultados
+        results_dir = os.path.join(args.results_dir, f"{args.arch}_{args.level}")
+        os.makedirs(results_dir, exist_ok=True)
+
+        # Generar texto
         generated = sample_from_model(
-            model, args.prompt, args.length, args.temperature, token2idx, idx2token, args.level
+            model, args.prompt, args.length, args.temperature, token2idx, idx2token, checkpoint['level']
         )
-        # Guardar resultado
-        log_path = os.path.join(args.results_dir, f'sample_{args.arch}_{args.level}.txt')
+
+        # Guardar la letra generada
+        log_path = os.path.join(results_dir, f'sample_{args.arch}_{args.level}.txt')
         save_log(generated, log_path)
         print(f'[INFO] Letra generada guardada en {log_path}')
 
