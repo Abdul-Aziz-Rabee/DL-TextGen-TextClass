@@ -16,7 +16,7 @@ import torch.nn as nn
 # Modelo base: RNN, LSTM, GRU
 # ====================
 class TextGenModel(nn.Module):
-    def __init__(self, arch, vocab_size, embedding_dim, hidden_size, level):
+    def __init__(self, arch, vocab_size, embedding_dim, hidden_size, level, num_layers=2, dropout=0.2):
         super().__init__()
         self.level = level
         self.vocab_size = vocab_size
@@ -33,9 +33,9 @@ class TextGenModel(nn.Module):
         self.rnn = rnn_cls(
             input_size=rnn_input_size,
             hidden_size=hidden_size,
-            num_layers=2,  # Cambia a 2 o más capas
+            num_layers=num_layers,  # Cambia a 2 o más capas
             batch_first=True,
-            dropout=0.2
+            dropout=dropout if num_layers > 1 else 0.0  # Dropout solo si más de 1 capa
         )
         self.fc = nn.Linear(hidden_size, vocab_size)
 
@@ -65,7 +65,7 @@ def train(model, train_loader, val_loader, device, epochs, lr, vocab_size, save_
     # Guardar log de entrenamiento
     log_file = os.path.join(model_dir, f'trainlog_{arch}_{level}.csv')
     with open(log_file, 'w') as f:
-        f.write('epoch,train_loss,val_loss\n')
+        f.write('epoch,train_loss,val_loss, val_ppl\n')
 
     for epoch in range(1, epochs + 1):
         model.train()
@@ -92,12 +92,12 @@ def train(model, train_loader, val_loader, device, epochs, lr, vocab_size, save_
                 val_loss += loss.item()
         avg_val_loss = val_loss / len(val_loader)
         val_losses.append(avg_val_loss)
-
-        print(f"[Epoch {epoch:02d}] Train Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f}")
+        avg_val_ppl = np.exp(avg_val_loss)
+        print(f"[Epoch {epoch:02d}] Train Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f} | Val PPL: {avg_val_ppl:.2f}")
 
         # Guardar log
         with open(log_file, 'a') as f:
-            f.write(f"{epoch},{avg_train_loss:.4f},{avg_val_loss:.4f}\n")
+            f.write(f"{epoch},{avg_train_loss:.4f},{avg_val_loss:.4f},{avg_val_ppl:.2f}\n")
 
 # Guardar mejor modelo
         # Guardar mejor modelo
@@ -141,6 +141,8 @@ def main():
     parser.add_argument('--mode', choices=['train', 'generate'], required=True)
     parser.add_argument('--model_path', type=str, required='generate' in '--mode')
     parser.add_argument('--prompt', type=str, required='generate' in '--mode')
+    parser.add_argument('--num_layers', type=int, default=2)
+    parser.add_argument('--dropout', type=float, default=0.2)
 
     # Parámetros opcionales (con valores predeterminados)
     parser.add_argument('--embedding_dim', type=int, default=128)
@@ -176,7 +178,7 @@ def main():
 
     if args.mode == 'train':
         # Split train/val
-        split_idx = int(0.9 * len(data))
+        split_idx = int(0.8 * len(data))
         train_data = data[:split_idx]
         val_data = data[split_idx:]
 
@@ -191,7 +193,9 @@ def main():
             vocab_size=vocab_size,
             embedding_dim=args.embedding_dim,
             hidden_size=args.hidden_size,
-            level=args.level
+            level=args.level,
+            num_layers=args.num_layers,
+            dropout=args.dropout
         ).to(device)
 
         # Entrenamiento
