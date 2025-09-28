@@ -13,6 +13,9 @@ def load_and_tokenize(path, level='char'):
     """
     with open(path, 'r', encoding='utf-8') as f:
         text = f.read()
+    # Eliminar tokens especiales
+    text = text.replace("<|endsong|>", "").replace("<|startsong|>", "")
+
     if level == 'char':
         tokens = list(text)
     elif level == 'word':

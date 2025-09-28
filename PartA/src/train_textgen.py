@@ -100,10 +100,11 @@ def train(model, train_loader, val_loader, device, epochs, lr, vocab_size, save_
             f.write(f"{epoch},{avg_train_loss:.4f},{avg_val_loss:.4f}\n")
 
 # Guardar mejor modelo
+        # Guardar mejor modelo
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
             no_improve_epochs = 0  # Reinicia el contador si hay mejora
-            model_path = os.path.join(save_dir, f"{arch}_{level}_best.pt")
+            model_path = os.path.join(model_dir, f"{arch}_{level}_best.pt")  # Asegúrate de usar model_dir
             torch.save({
                 'model_state_dict': model.state_dict(),
                 'arch': arch,
@@ -116,7 +117,7 @@ def train(model, train_loader, val_loader, device, epochs, lr, vocab_size, save_
                 'idx2token': idx2token,
                 'token2idx': token2idx
             }, model_path)
-            print(f"    [INFO] Mejor modelo guardado en {model_path}")
+            print(f"[INFO] Mejor modelo guardado en {model_path}")
             print(f"[INFO] Log de entrenamiento guardado en {log_file}")
         else:
             no_improve_epochs += 1
