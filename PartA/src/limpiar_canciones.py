@@ -7,6 +7,7 @@ def limpiar_letra(texto: str) -> str:
     - Quita secciones [Verso], [Coro], etc.
     - Quita 'Embed', 'You might also like', números sueltos.
     - Normaliza espacios y saltos de línea.
+    - Convertir a minúsculas.
     """
     # 1. Eliminar notas entre *...*
     texto = re.sub(r"\*[^*]+\*", " ", texto)
@@ -24,6 +25,8 @@ def limpiar_letra(texto: str) -> str:
 
     # 4. Normalizar espacios en blanco
     texto = re.sub(r"\s+", " ", texto).strip()
+    # 5. Convertir a minúsculas
+    texto = texto.lower()
 
     return texto
 

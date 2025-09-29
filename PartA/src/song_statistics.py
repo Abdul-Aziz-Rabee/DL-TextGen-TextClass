@@ -3,12 +3,14 @@ import os
 import pandas as pd
 from collections import Counter
 import matplotlib.pyplot as plt
+import nltk
+# nltk.download("stopwords") # Descargar stopwords si no están disponibles
+from nltk.corpus import stopwords
 
 def cargar_corpus(path="canciones_clean.txt"):
     with open(path, "r", encoding="utf-8") as f:
         contenido = f.read()
 
-    # separar canciones por delimitadores
     bloques = re.split(r"<\|startsong\|>", contenido)
     canciones = []
     for bloque in bloques:
@@ -20,7 +22,6 @@ def cargar_corpus(path="canciones_clean.txt"):
     return canciones
 
 def explorar_corpus(canciones):
-    # Estadísticas básicas
     n_canciones = len(canciones)
     longitudes = [len(c.split()) for c in canciones]
     promedio = sum(longitudes) / n_canciones
@@ -33,18 +34,25 @@ def explorar_corpus(canciones):
     print(f"Máximo: {max_len} palabras")
     print(f"Mínimo: {min_len} palabras")
 
-    # Top palabras más comunes (sin stopwords muy básicas)
-    stopwords = {"de","la","que","el","y","a","en","un","una","los","las","se","del","al"}
+    # Obtener stopwords de NLTK
+    nltk_stopwords = set(stopwords.words("spanish"))
+
     todas_palabras = []
     for c in canciones:
         todas_palabras.extend(re.findall(r"\b\w+\b", c.lower()))
 
-    palabras_filtradas = [p for p in todas_palabras if p not in stopwords]
-    top = Counter(palabras_filtradas).most_common(20)
+    # Top palabras más comunes (incluyendo stopwords)
+    top_incluyendo = Counter(todas_palabras).most_common(20)
+    df_incluyendo = pd.DataFrame(top_incluyendo, columns=["Palabra", "Frecuencia"])
+    print("\n🔝 Top 20 palabras más frecuentes (incluyendo stopwords):")
+    print(df_incluyendo.to_string(index=False))
 
+    # Top palabras más comunes (excluyendo stopwords)
+    palabras_filtradas = [p for p in todas_palabras if p not in nltk_stopwords]
+    top_excluyendo = Counter(palabras_filtradas).most_common(20)
+    df_excluyendo = pd.DataFrame(top_excluyendo, columns=["Palabra", "Frecuencia"])
     print("\n🔝 Top 20 palabras más frecuentes (sin stopwords):")
-    for palabra, freq in top:
-        print(f"{palabra}: {freq}")
+    print(df_excluyendo.to_string(index=False))
 
     # Histograma de longitudes
     plt.hist(longitudes, bins=20, color="skyblue", edgecolor="black")
@@ -57,6 +65,11 @@ def explorar_corpus(canciones):
     plt.show()
 
 if __name__ == "__main__":
+    import nltk
+    try:
+        nltk.data.find('corpora/stopwords')
+    except LookupError:
+        nltk.download('stopwords')
     base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     PATH = os.path.join(base_path, "data", "canciones_clean.txt")
     canciones = cargar_corpus(PATH)
