@@ -5,6 +5,8 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from utils_textgen import (
+    load_and_split_songs,
+    load_and_split_songs2,
     load_and_tokenize,
     TextDataset,
     sample_from_model,
@@ -149,9 +151,9 @@ def main():
     parser.add_argument('--hidden_size', type=int, default=256)
     parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--batch_size', type=int, default=128)
-    parser.add_argument('--lr', type=float, default=1e-3)
+    parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument('--seq_len', type=int, default=50)
-    parser.add_argument('--data_path', type=str, default='../data/canciones_clean.txt')
+    parser.add_argument('--data_path', type=str, default='../data/canciones.txt')
     parser.add_argument('--save_dir', type=str, default='../models/')
     parser.add_argument('--results_dir', type=str, default='../results/')
     parser.add_argument('--length', type=int, default=100)
@@ -171,19 +173,18 @@ def main():
     os.makedirs(args.results_dir, exist_ok=True)
 
     # Carga y tokenización de datos
-    data, idx2token, token2idx = load_and_tokenize(
-        args.data_path, level=args.level
+    data_path = os.path.abspath(args.data_path)
+    train_tokens, val_tokens, idx2token, token2idx = load_and_split_songs2(
+        data_path, level=args.level, val_frac=0.2, seed=args.seed
     )
     vocab_size = len(idx2token)
 
     if args.mode == 'train':
-        # Split train/val
-        split_idx = int(0.8 * len(data))
-        train_data = data[:split_idx]
-        val_data = data[split_idx:]
+        #print(f"[INFO] Datos de entrenamiento: {len(train_tokens)} tokens")
+        #print(f"[INFO] Datos de validación: {len(val_tokens)} tokens")
 
-        train_ds = TextDataset(train_data, args.seq_len, token2idx)
-        val_ds = TextDataset(val_data, args.seq_len, token2idx)
+        train_ds = TextDataset(train_tokens, args.seq_len, token2idx)
+        val_ds = TextDataset(val_tokens, args.seq_len, token2idx)
         train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True)
         val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False)
 

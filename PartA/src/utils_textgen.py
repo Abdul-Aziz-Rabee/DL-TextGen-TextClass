@@ -2,6 +2,88 @@ import os
 import torch
 from torch.utils.data import Dataset
 import numpy as np
+import random
+
+def load_and_split_songs2(path, level='char', val_frac=0.2, seed=42):
+    with open(path, 'r', encoding='utf-8') as f:
+        text = f.read()
+
+    # Split por delimitador, pero NO elimines los delimitadores
+    canciones = [c.strip() for c in text.split("<|startsong|>") if c.strip()]
+    # NO elimines <|endsong|>
+    # canciones = [c.replace("<|endsong|>", "") for c in canciones]  # <-- Elimina esta línea
+
+    print(f"[INFO] Total canciones cargadas: {len(canciones)}")
+    random.seed(seed)
+    random.shuffle(canciones)
+
+    n_total = len(canciones)
+    n_val = int(val_frac * n_total)
+    val_canciones = canciones[:n_val]
+    train_canciones = canciones[n_val:]
+
+    def tokenize_list(cancion_list, level):
+        joined = "\n".join(cancion_list)
+        joined = joined.replace("<|startsong|>", " <STARTSONG> ")
+        joined = joined.replace("<|endsong|>", " <ENDSONG> ")
+        if level == 'char':
+            tokens = list(joined)
+        elif level == 'word':
+            # Reemplaza saltos de línea reales por un token especial antes de split
+            joined = joined.replace('\n', ' <NL> ')
+            tokens = joined.split()
+        else:
+            raise ValueError('Nivel no soportado')
+        vocab = sorted(set(tokens))
+        idx2token = {i: t for i, t in enumerate(vocab)}
+        token2idx = {t: i for i, t in idx2token.items()}
+        return tokens, idx2token, token2idx
+
+    train_tokens, train_idx2token, train_token2idx = tokenize_list(train_canciones, level)
+    val_tokens, _, _ = tokenize_list(val_canciones, level)
+
+    return train_tokens, val_tokens, train_idx2token, train_token2idx
+
+
+def load_and_split_songs(path, level='char', val_frac=0.2, seed=42):
+    # 1. Leer todas las canciones como lista
+    with open(path, 'r', encoding='utf-8') as f:
+        text = f.read()
+
+    # Split por delimitador
+    # Quita cualquier espacio vacío por si acaso
+    canciones = [c.strip() for c in text.split("<|startsong|>") if c.strip()]
+    # Remueve posibles delimitadores de cierre si existen
+    canciones = [c.replace("<|endsong|>", "") for c in canciones]
+    print(f"[INFO] Total canciones cargadas: {len(canciones)}")
+    # 2. Shuffle a nivel canción
+    random.seed(seed)
+    random.shuffle(canciones)
+
+    # 3. Split en train/val (por canción)
+    n_total = len(canciones)
+    n_val = int(val_frac * n_total)
+    val_canciones = canciones[:n_val]
+    train_canciones = canciones[n_val:]
+
+    # 4. Tokeniza cada subset como corpus grande
+    def tokenize_list(cancion_list, level):
+        joined = "\n".join(cancion_list)
+        if level == 'char':
+            tokens = list(joined)
+        elif level == 'word':
+            tokens = joined.replace('\n', ' \n ').split()
+        else:
+            raise ValueError('Nivel no soportado')
+        vocab = sorted(set(tokens))
+        idx2token = {i: t for i, t in enumerate(vocab)}
+        token2idx = {t: i for i, t in idx2token.items()}
+        return tokens, idx2token, token2idx
+
+    train_tokens, train_idx2token, train_token2idx = tokenize_list(train_canciones, level)
+    val_tokens, _, _ = tokenize_list(val_canciones, level)  # Usa mismo vocab que el train
+
+    return train_tokens, val_tokens, train_idx2token, train_token2idx
 
 # ==========================
 # Tokenización y vocabulario
@@ -31,13 +113,11 @@ def load_and_tokenize(path, level='char'):
 # Dataset para DataLoader
 # ==========================
 class TextDataset(Dataset):
-    """
-    Dataset para modelado de lenguaje (input = seq, target = seq shift).
-    """
     def __init__(self, tokens, seq_len, token2idx):
         self.seq_len = seq_len
         self.token2idx = token2idx
-        self.data = [token2idx[t] for t in tokens]
+        # Si el token no está en el vocabulario, asigna 0 (o el idx de <unk> si lo tienes)
+        self.data = [token2idx.get(t, 0) for t in tokens]
         self.length = len(self.data) - seq_len
 
     def __len__(self):
@@ -47,6 +127,7 @@ class TextDataset(Dataset):
         x = torch.tensor(self.data[idx:idx+self.seq_len], dtype=torch.long)
         y = torch.tensor(self.data[idx+1:idx+self.seq_len+1], dtype=torch.long)
         return x, y
+
 
 # ==========================
 # Sampling/generación de texto
@@ -84,7 +165,10 @@ def sample_from_model(model, prompt, length, temperature, token2idx, idx2token, 
     if level == 'char':
         return ''.join(generated)
     else:
-        return ' '.join(generated)
+        # Une palabras y reemplaza el token \n por salto de línea real
+        text = ' '.join(generated)
+        text = text.replace(' <NL> ', '\n').replace('<NL>', '\n')
+        return text
 
 # ==========================
 # Guardar logs y muestras
