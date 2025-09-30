@@ -20,10 +20,10 @@ DROPOUT=${5:-0.3}
 EPOCHS=${6:-50}
 BATCH_SIZE=${7:-32}
 SEQ_LEN=${8:-50}
-EMBED_DIM=${9:-128}
+EMBED_DIM=${9:-128} 
 LR=${10:-0.001}
 
-DATA_PATH=${11:-data/canciones_clean.txt}
+DATA_PATH=${11:-data/canciones.txt}
 SAVE_DIR=${12:-models/}
 RESULTS_DIR=${13:-results/}
 
