@@ -138,12 +138,14 @@ def sample_from_model(model, prompt, length, temperature, token2idx, idx2token, 
     """
     device = next(model.parameters()).device
     model.eval()
-    if prompt is None:
-        prompt = '\n'
+    if not prompt or (level == 'word' and len(prompt.strip()) == 0):
+        prompt = '\n' if level == 'char' else '<STARTSONG>'
     if level == 'char':
         tokens = list(prompt)
     else:
         tokens = prompt.split()
+    if len(tokens) == 0:
+        tokens = ['<STARTSONG>'] if level == 'word' else ['\n']
     generated = tokens.copy()
     input_seq = [token2idx.get(t, 0) for t in tokens]
     input_tensor = torch.tensor([input_seq], dtype=torch.long).to(device)

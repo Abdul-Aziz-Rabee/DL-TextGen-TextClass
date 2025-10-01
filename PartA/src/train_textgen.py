@@ -101,7 +101,6 @@ def train(model, train_loader, val_loader, device, epochs, lr, vocab_size, save_
         with open(log_file, 'a') as f:
             f.write(f"{epoch},{avg_train_loss:.4f},{avg_val_loss:.4f},{avg_val_ppl:.2f}\n")
 
-# Guardar mejor modelo
         # Guardar mejor modelo
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
