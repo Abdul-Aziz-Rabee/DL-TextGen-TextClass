@@ -179,8 +179,6 @@ def main():
     vocab_size = len(idx2token)
 
     if args.mode == 'train':
-        #print(f"[INFO] Datos de entrenamiento: {len(train_tokens)} tokens")
-        #print(f"[INFO] Datos de validación: {len(val_tokens)} tokens")
 
         train_ds = TextDataset(train_tokens, args.seq_len, token2idx)
         val_ds = TextDataset(val_tokens, args.seq_len, token2idx)
