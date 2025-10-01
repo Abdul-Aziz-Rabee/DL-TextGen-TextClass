@@ -1,34 +1,41 @@
 import re
+import os
+
+import re
 
 def limpiar_letra(texto: str) -> str:
     """
-    Aplica reglas de limpieza a una letra de canción.
+    Limpia una letra de canción preservando saltos de línea y estructura.
     - Quita notas escénicas (*...*).
-    - Quita secciones [Verso], [Coro], etc.
-    - Quita 'Embed', 'You might also like', números sueltos.
-    - Normaliza espacios y saltos de línea.
-    - Convertir a minúsculas.
+    - Quita encabezados [Verso], [Coro], [Puente: ...], etc.
+    - Quita líneas basura ('Embed', 'You might also like', 'Letra de ...').
+    - Normaliza espacios solo dentro de cada línea.
+    - Convierte a minúsculas.
+    - Preserva saltos de línea dobles para estrofas.
     """
     # 1. Eliminar notas entre *...*
     texto = re.sub(r"\*[^*]+\*", " ", texto)
 
-    # 2. Eliminar encabezados de secciones tipo [Verso 1], [Coro]
-    texto = re.sub(r"\[.*?\]", " ", texto)
+    # 2. Eliminar encabezados de secciones tipo [Verso 1], [Coro], [Puente: ...], etc.
+    texto = re.sub(r"\[.*?\]", "", texto)
 
-    # 3. Eliminar líneas basura típicas de Genius
-    bad_tokens = ["embed", "you might also like"]
-    lineas = []
-    for linea in texto.splitlines():
+    # 3. Eliminar líneas basura típicas de Genius y créditos
+    bad_tokens = [
+        "embed", "you might also like", "letra de", "lyrics", "here we go"
+    ]
+    # Preserva saltos dobles
+    lineas = texto.splitlines()
+    lineas_limpias = []
+    for linea in lineas:
         if not any(bt in linea.lower() for bt in bad_tokens):
-            lineas.append(linea)
-    texto = "\n".join(lineas)
+            # Normaliza espacios en cada línea
+            linea_limpia = re.sub(r"\s+", " ", linea).strip()
+            lineas_limpias.append(linea_limpia)
+    # Reconstruye el texto, preservando saltos dobles
+    texto_limpio = "\n".join(lineas_limpias)
+    texto_limpio = re.sub(r'\n{3,}', '\n\n', texto_limpio)  # Máximo dos saltos seguidos
 
-    # 4. Normalizar espacios en blanco
-    texto = re.sub(r"\s+", " ", texto).strip()
-    # 5. Convertir a minúsculas
-    texto = texto.lower()
-
-    return texto
+    return texto_limpio
 
 
 def limpiar_archivo(entrada="canciones.txt", salida="canciones_clean.txt", min_len=20):
@@ -62,4 +69,7 @@ def limpiar_archivo(entrada="canciones.txt", salida="canciones_clean.txt", min_l
 
 
 if __name__ == "__main__":
-    limpiar_archivo()
+    base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    PATH = os.path.join(base_path, "data", "canciones.txt")
+    print(f"Usando archivo de entrada: {PATH}")
+    limpiar_archivo(entrada=PATH)
