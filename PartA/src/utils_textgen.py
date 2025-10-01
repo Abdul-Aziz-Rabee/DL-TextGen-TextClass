@@ -24,8 +24,8 @@ def load_and_split_songs2(path, level='char', val_frac=0.2, seed=42):
 
     def tokenize_list(cancion_list, level):
         joined = "\n".join(cancion_list)
-        joined = joined.replace("<|startsong|>", " <STARTSONG> ")
-        joined = joined.replace("<|endsong|>", " <ENDSONG> ")
+        joined = joined.replace("<|startsong|>", " <SS> ")
+        joined = joined.replace("<|endsong|>", " <ES> ")
         if level == 'char':
             tokens = list(joined)
         elif level == 'word':
@@ -139,13 +139,13 @@ def sample_from_model(model, prompt, length, temperature, token2idx, idx2token, 
     device = next(model.parameters()).device
     model.eval()
     if not prompt or (level == 'word' and len(prompt.strip()) == 0):
-        prompt = '\n' if level == 'char' else '<STARTSONG>'
+        prompt = '\n' if level == 'char' else '<SS>'
     if level == 'char':
         tokens = list(prompt)
     else:
         tokens = prompt.split()
     if len(tokens) == 0:
-        tokens = ['<STARTSONG>'] if level == 'word' else ['\n']
+        tokens = ['<SS>'] if level == 'word' else ['\n']
     generated = tokens.copy()
     input_seq = [token2idx.get(t, 0) for t in tokens]
     input_tensor = torch.tensor([input_seq], dtype=torch.long).to(device)
@@ -170,6 +170,8 @@ def sample_from_model(model, prompt, length, temperature, token2idx, idx2token, 
         # Une palabras y reemplaza el token \n por salto de línea real
         text = ' '.join(generated)
         text = text.replace(' <NL> ', '\n').replace('<NL>', '\n')
+        text = text.replace(' <SS> ', '\n').replace('<SS>', '\n')
+        text = text.replace(' <ES> ', '\n').replace('<ES>', '\n')
         return text
 
 # ==========================
