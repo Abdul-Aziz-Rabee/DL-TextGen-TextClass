@@ -11,7 +11,7 @@
 
 set -e
 
-# Parámetros clave como argumentos (o fija aquí tu experimento)
+# Parámetros clave como argumentos con valores por defecto
 ARCH=${1:-gru}
 LEVEL=${2:-char}
 NUM_LAYERS=${3:-3}
