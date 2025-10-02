@@ -9,17 +9,16 @@ from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training, Ta
 parser = argparse.ArgumentParser()
 parser.add_argument('--model_path', type=str, default='../models/Meta-Llama-3-8B/snapshots/8cde5ca8380496c9a6cc7ef3a8b46a0372a1d920/')
 parser.add_argument('--data_path', type=str, default='../data/train_lyrics.jsonl')
-parser.add_argument('--run_name', type=str, default='llama3_ft_v1')
+parser.add_argument('--run_name', type=str, default='llama3_ft')
 parser.add_argument('--epochs', type=int, default=3)
 parser.add_argument('--batch_size', type=int, default=2)
 parser.add_argument('--block_size', type=int, default=256)
 parser.add_argument('--lr', type=float, default=1e-4)
 parser.add_argument('--dropout', type=float, default=0.05)
-parser.add_argument('--save_dir', type=str, default='../models/llama3_ft_v1')
-parser.add_argument('--output_dir', type=str, default='../results/llama3_ft_v1')
+parser.add_argument('--save_dir', type=str, default='../models/llama3_ft')
 args = parser.parse_args()
 
-os.makedirs(args.output_dir, exist_ok=True)
+os.makedirs(args.save_dir, exist_ok=True)
 
 # 1. Parámetros principales
 
@@ -30,7 +29,7 @@ BASE_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 # Así generas rutas absolutas y evitas confusiones
 MODEL_CACHE_PATH = os.path.join(BASE_DIR, "models/Meta-Llama-3-8B/snapshots/8cde5ca8380496c9a6cc7ef3a8b46a0372a1d920/")
 DATA_PATH = os.path.join(BASE_DIR, "data/train_lyrics.jsonl")
-OUTPUT_DIR = os.path.join(BASE_DIR, "results", args.run_name)
+OUTPUT_DIR = os.path.join(BASE_DIR, "models", args.run_name)
 
 RUN_NAME = args.run_name
 EPOCHS = args.epochs

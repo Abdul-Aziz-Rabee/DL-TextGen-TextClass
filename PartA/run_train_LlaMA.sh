@@ -34,7 +34,7 @@ python -u src/train_llama.py \
     --lr "$LR" \
     --dropout "$DROPOUT" \
     --save_dir "models/$RUN_NAME" \
-    --output_dir "results/$RUN_NAME"
+
 
 echo "Fine-tuning completado."
 
