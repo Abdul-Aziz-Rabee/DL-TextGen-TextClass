@@ -21,3 +21,6 @@ dependencies:
       - datasets
       - lyricsgenius
       - python-dotenv
+      - peft
+      - accelerate
+      - bitsandbytes

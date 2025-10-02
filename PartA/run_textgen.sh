@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=textgen_${1:-exp}
+#SBATCH --job-name=textgen
 #SBATCH --partition=GPU
 #SBATCH --nodes=1
 #SBATCH --ntasks=1

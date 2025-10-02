@@ -1,5 +1,6 @@
 import os
 import torch
+import re
 from torch.utils.data import Dataset
 import numpy as np
 import random
@@ -170,8 +171,8 @@ def sample_from_model(model, prompt, length, temperature, token2idx, idx2token, 
         # Une palabras y reemplaza el token \n por salto de línea real
         text = ' '.join(generated)
         text = text.replace(' <NL> ', '\n').replace('<NL>', '\n')
-        text = text.replace(' <SS> ', '\n').replace('<SS>', '\n')
-        text = text.replace(' <ES> ', '\n').replace('<ES>', '\n')
+        text = re.sub(r'\s*<SS>\s*', '\n', text)
+        text = re.sub(r'\s*<ES>\s*', '\n', text)
         return text
 
 # ==========================

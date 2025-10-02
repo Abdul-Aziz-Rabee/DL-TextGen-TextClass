@@ -5,6 +5,19 @@ from utils_textgen import sample_from_model
 import torch
 from train_textgen import TextGenModel
 
+import random
+import numpy as np
+import torch
+
+SEED = 42
+random.seed(SEED)
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed(SEED)
+
+
+
 # Definir las configuraciones de los modelos y prompts
 models = [
     {'arch': 'gru', 'level': 'char', 'path': '../models/gru_char/gru_char_best.pt'},
@@ -17,8 +30,8 @@ models = [
 
 prompts = [
     "",  # Prompt vacío
-    "En la penumbra del día",  # Ejemplo lyric starter
-    "Te extraño porque",  # Otro ejemplo
+    "En la penumbra del día",  
+    "Bailando bajo la lluvia",  
 ]
 temperatures = [0.8, 1.0, 1.2]
 length_char = 400
@@ -28,7 +41,7 @@ os.makedirs(results_dir, exist_ok=True)
 
 for m in models:
     # Carga modelo y checkpoint
-    checkpoint = torch.load(m['path'], map_location='cpu')
+    checkpoint = torch.load(m['path'], map_location='cuda')
     model = TextGenModel(
         arch=checkpoint['arch'],
         vocab_size=checkpoint['vocab_size'],
