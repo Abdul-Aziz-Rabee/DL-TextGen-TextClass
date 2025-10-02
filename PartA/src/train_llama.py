@@ -4,10 +4,14 @@ from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments, Trainer
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training, TaskType
 
+# Ruta base del proyecto
+base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 # 1. Parámetros principales
 MODEL_NAME = "meta-llama/Meta-Llama-3-8B"
-DATA_PATH = "data/train_lyrics.jsonl"  # <-- Cambiado a .jsonl
-OUTPUT_DIR = "models/llama3_lora"
+MODEL_CACHE_PATH = os.path.join(base_path, 'models/models--meta-llama--Meta-Llama-3-8B')  # Ruta absoluta al modelo base
+DATA_PATH = os.path.join(base_path, "data/train_lyrics.jsonl")
+OUTPUT_DIR = os.path.join(base_path, "models/llama3_lora")
 RUN_NAME = "llama3_lora_lyrics"
 
 EPOCHS = 3
@@ -15,10 +19,12 @@ BATCH_SIZE = 2
 LR = 2e-4
 BLOCK_SIZE = 256
 
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
 # 2. Cargar y procesar datos
 dataset = load_dataset("json", data_files=DATA_PATH)["train"]
-dataset = dataset.train_test_split(test_size=0.1, seed=42)
-tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, use_fast=True)
+dataset = dataset.train_test_split(test_size=0.2, seed=42)
+tokenizer = AutoTokenizer.from_pretrained(MODEL_CACHE_PATH, use_fast=True)
 tokenizer.pad_token = tokenizer.eos_token
 
 def tokenize_fn(batch):
@@ -33,9 +39,9 @@ tokenized_datasets = dataset.map(tokenize_fn, batched=True)
 
 # 3. Cargar modelo y preparar LoRA
 model = AutoModelForCausalLM.from_pretrained(
-    MODEL_NAME,
+    MODEL_CACHE_PATH,
     torch_dtype=torch.float16,
-    device_map="auto",
+    device_map="cuda",
     load_in_4bit=True,
 )
 

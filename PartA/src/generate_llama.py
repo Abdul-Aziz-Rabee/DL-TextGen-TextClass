@@ -15,7 +15,7 @@ bnb_config = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_compute_dtype=torch.
 model = AutoModelForCausalLM.from_pretrained(
     MODEL_PATH,
     torch_dtype=torch.float16,
-    device_map="auto",
+    device_map="cuda",
     quantization_config=bnb_config
 )
 model.eval()
