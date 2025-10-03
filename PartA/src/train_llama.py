@@ -42,6 +42,20 @@ dataset = dataset.train_test_split(test_size=0.2, seed=42)
 tokenizer = AutoTokenizer.from_pretrained(MODEL_CACHE_PATH, use_fast=True)
 tokenizer.pad_token = tokenizer.eos_token
 
+print("=" * 60)
+print("Configuración de entrenamiento Llama3 + LoRA")
+print(f"Tamaño de vocabulario: {len(tokenizer)}")
+print(f"Longitud de secuencia (block_size): {BLOCK_SIZE}")
+print(f"Learning rate: {args.lr}")
+print(f"Batch size: {args.batch_size}")
+print(f"Épocas: {args.epochs}")
+print(f"Dropout LoRA: {args.dropout}")
+print(f"Modelo base: {MODEL_CACHE_PATH}")
+print(f"Ruta del dataset: {DATA_PATH}")
+print(f"Nombre de experimento: {RUN_NAME}")
+print("=" * 60)
+
+
 def tokenize_fn(batch):
     outputs = tokenizer(
         batch["text"],

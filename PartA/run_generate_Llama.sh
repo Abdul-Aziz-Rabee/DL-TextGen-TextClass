@@ -12,11 +12,11 @@
 set -e
 
 MODEL_PATH="results/llama3_v3"
-PROMPT="En la penumbra del día,\n"
-MAX_NEW_TOKENS=200
-TEMPERATURE=1.0
-TOP_P=0.95
-OUTPUT_DIR="results/LlaMA"
+PROMPT=${1:-"En la penumbra del día,\n"}
+MAX_NEW_TOKENS=${2:-200}
+TEMPERATURE=${3:-1.0}
+TOP_P=${4:-0.95}
+OUTPUT_NAME=${5:-"llama3_generation"}
 
 mkdir -p logs
 
@@ -28,6 +28,6 @@ python -u src/generate_llama.py \
     --max_new_tokens $MAX_NEW_TOKENS \
     --temperature $TEMPERATURE \
     --top_p $TOP_P \
-    --output_dir "$OUTPUT_DIR"
+    --output_dir "results/$OUTPUT_NAME"
 
 echo "Generación de texto completada."
