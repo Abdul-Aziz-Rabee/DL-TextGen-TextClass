@@ -6,6 +6,15 @@ from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments, Trainer, BitsAndBytesConfig
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training, TaskType
 
+if torch.cuda.is_available():
+    device = torch.device("cuda")
+    print(f"Entrenando en GPU: {torch.cuda.get_device_name(0)}")
+    print(f"Memoria GPU total: {torch.cuda.get_device_properties(0).total_memory / 1e9:.2f} GB")
+    print(f"Nombre del dispositivo: {torch.cuda.get_device_name(0)}")
+else:
+    device = torch.device("cpu")
+    print("Entrenando en CPU")
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--model_path', type=str, default='../models/Meta-Llama-3-8B/snapshots/8cde5ca8380496c9a6cc7ef3a8b46a0372a1d920/')
 parser.add_argument('--data_path', type=str, default='../data/train_lyrics.jsonl')
@@ -91,7 +100,13 @@ lora_config = LoraConfig(
 )
 
 model = get_peft_model(model, lora_config)
-model.print_trainable_parameters()
+trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+total_params = sum(p.numel() for p in model.parameters())
+
+print(f"Trainable params: {trainable_params:,}")
+print(f"Total params: {total_params:,}")
+print(f"Porcentaje entrenable: {trainable_params / total_params * 100:.4f}%")
+
 
 # 4. Argumentos de entrenamiento
 '''
