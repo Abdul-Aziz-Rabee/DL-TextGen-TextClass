@@ -116,6 +116,8 @@ def train_kfold(args):
 
         best_val_f1 = -np.inf
         best_state = None
+        patience = 5
+        epochs_no_improve = 0
 
         for epoch in range(1, args.epochs + 1):
             train_loss, train_acc, train_f1m, _ = train_one_epoch(model, train_loader, criterion, optimizer, device)
@@ -128,6 +130,12 @@ def train_kfold(args):
             if val_f1m > best_val_f1:
                 best_val_f1 = val_f1m
                 best_state = model.state_dict().copy()
+                epochs_no_improve = 0
+            else:
+                epochs_no_improve += 1
+            if epochs_no_improve >= patience:
+                print("⏳ Early stopping...")
+                break
 
         # Restaurar mejor modelo
         model.load_state_dict(best_state)
@@ -166,19 +174,19 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Entrenamiento K-Fold de RNN/LSTM/GRU")
     parser.add_argument("--rnn_type", type=str, default="lstm", choices=["rnn", "lstm", "gru"])
     parser.add_argument("--level", type=str, default="word", choices=["word", "char"])
-    parser.add_argument("--embed_dim", type=int, default=256)
-    parser.add_argument("--hidden_size", type=int, default=256)
-    parser.add_argument("--num_layers", type=int, default=1)
+    parser.add_argument("--embed_dim", type=int, default=512)
+    parser.add_argument("--hidden_size", type=int, default=512)
+    parser.add_argument("--num_layers", type=int, default=2)
     parser.add_argument("--bidirectional", action="store_true")
-    parser.add_argument("--pool", type=str, default="max", choices=["max", "mean"])
+    parser.add_argument("--pool", type=str, default="mean", choices=["max", "mean"])
     parser.add_argument("--emb_dropout", type=float, default=0.2)
     parser.add_argument("--rnn_dropout", type=float, default=0.2)
-    parser.add_argument("--proj_dropout", type=float, default=0.5)
+    parser.add_argument("--proj_dropout", type=float, default=0.3)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--weight_decay", type=float, default=1e-4)
-    parser.add_argument("--batch_size", type=int, default=64)
+    parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--epochs", type=int, default=10)
-    parser.add_argument("--max_len", type=int, default=200)
+    parser.add_argument("--max_len", type=int, default=250)
     parser.add_argument("--min_freq", type=int, default=2)
     parser.add_argument("--kfolds", type=int, default=5)
     parser.add_argument("--seed", type=int, default=42)

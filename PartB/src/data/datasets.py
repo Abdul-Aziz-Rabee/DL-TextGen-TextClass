@@ -70,7 +70,7 @@ def load_clean_corpus(base_dir=".", archivo="MeIA_2025_train.csv", level="word")
     else:
         raise ValueError("Nivel de tokenización no soportado. Use 'word' o 'char'.")
 
-    labels = df["Polarity"].astype(int).values
+    labels = df["Polarity"].astype(int).apply(lambda x: x - 1).values  # Convertir etiquetas de 1,2,3,4,5 a 0,1,2,3,4
     return texts, labels
 
 
