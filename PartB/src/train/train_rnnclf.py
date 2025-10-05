@@ -174,7 +174,7 @@ if __name__ == "__main__":
     parser.add_argument("--emb_dropout", type=float, default=0.2)
     parser.add_argument("--rnn_dropout", type=float, default=0.2)
     parser.add_argument("--proj_dropout", type=float, default=0.5)
-    parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--weight_decay", type=float, default=1e-4)
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--epochs", type=int, default=10)

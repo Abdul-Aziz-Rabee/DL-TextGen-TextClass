@@ -3,6 +3,7 @@ channels:
   - defaults
   - pytorch
   - nvidia
+  - conda-forge
 dependencies:
   - python=3.11
   - pip
@@ -15,6 +16,7 @@ dependencies:
   - seaborn
   - tqdm
   - rich
+  - spacy
   - pip:
       - unidecode
       - transformers
