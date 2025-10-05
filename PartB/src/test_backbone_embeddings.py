@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 """
 Prueba rápida de carga del encoder BETO_MTL (solo backbone).
 Verifica que los pesos se carguen correctamente sin reinicialización.
