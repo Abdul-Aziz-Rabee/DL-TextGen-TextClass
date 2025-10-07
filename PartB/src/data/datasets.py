@@ -60,8 +60,8 @@ def load_clean_corpus(base_dir=".", archivo="MeIA_2025_train.csv", level="word")
         df,
         eliminar_stop=False,
         normalizar_texto=True,
-        lematizar_stem=False,
-        custom_words={'hotel', 'restaurante', 'lugar', 'playa', 'comida', 'servicio'}
+        lematizar_stem=True,
+        custom_words={'hotel', 'restaurante', 'lugar', 'playa', 'comida', 'servicio'} 
     )
     if level == "word":
         texts = [word_tokenize(t) for t in df["Review"].tolist()]

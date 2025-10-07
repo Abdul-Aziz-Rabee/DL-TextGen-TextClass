@@ -5,6 +5,11 @@ import re
 import os
 import spacy #type: ignore
 from nltk.stem import SnowballStemmer
+from nltk.corpus import stopwords
+import nltk
+
+# nltk.download("stopwords")
+stopwords_set = set(stopwords.words("spanish"))
 
 # Carga spaCy solo una vez
 try:
@@ -108,7 +113,6 @@ def eliminar_stopwords(texto, stopwords_set):
 def procesar_corpus(
     df,
     eliminar_stop=False,
-    stopwords_set=None,
     normalizar_texto=False,
     lematizar_stem=False,
     metodo_lematizar='lematizar',
