@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=textclf
+#SBATCH --job-name=textclfkfolds
 #SBATCH --partition=GPU
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -17,15 +17,15 @@ mkdir -p logs
 # === FUNCIONA COMO WRAPPER PARA TODAS LAS ARQUITECTURAS ===
 
 echo "=== Entrenando RNN ==="
-python -m src.eval.train_eval_final --arch_type rnn --level word --epochs 30 
+python -m src.train.train_rnnclf --rnn_type rnn --level word --epochs 30
 
 echo "=== Entrenando LSTM ==="
-python -m src.eval.train_eval_final --arch_type lstm --level word --epochs 30
+python -m src.train.train_rnnclf --rnn_type lstm --level word --epochs 30
 
 echo "=== Entrenando GRU ==="
-python -m src.eval.train_eval_final --arch_type gru --level word --epochs 30
+python -m src.train.train_rnnclf --rnn_type gru --level word --epochs 30
 
 echo "=== Entrenando CNN ==="
-python -m src.eval.train_eval_final --arch_type cnn --level word --epochs 30
+python -m src.train.train_cnnclf --level word --epochs 30
 
 echo "=== TODO FINALIZADO ==="

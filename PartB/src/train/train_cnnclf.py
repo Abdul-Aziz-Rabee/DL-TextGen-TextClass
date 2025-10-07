@@ -13,7 +13,7 @@ import torch.optim as optim
 from tqdm import tqdm
 import numpy as np
 from sklearn.metrics import accuracy_score, f1_score
-from src.models.cnn_text import TextCNN
+from src.models.cnn_text import CNNClassifier
 from src.data.datasets import load_clean_corpus, create_kfold_loaders
 import pandas as pd
 import random
@@ -88,7 +88,7 @@ def train_kfold(args):
     for fold_idx, train_loader, val_loader in folds:
         print(f"\n===== Fold {fold_idx+1}/{args.kfolds} =====")
 
-        model = TextCNN(
+        model = CNNClassifier(
             vocab_size=len(vocab),
             embed_dim=args.embed_dim,
             num_filters=args.num_filters,
@@ -145,16 +145,16 @@ def train_kfold(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Entrenamiento K-Fold de TextCNN")
     parser.add_argument("--level", type=str, default="word", choices=["word", "char"])
-    parser.add_argument("--embed_dim", type=int, default=300)
+    parser.add_argument("--embed_dim", type=int, default=512)
     parser.add_argument("--num_filters", type=int, default=100)
     parser.add_argument("--kernel_sizes", nargs="+", type=int, default=[3,4,5])
     parser.add_argument("--emb_dropout", type=float, default=0.2)
-    parser.add_argument("--proj_dropout", type=float, default=0.5)
-    parser.add_argument("--lr", type=float, default=1e-3)
-    parser.add_argument("--weight_decay", type=float, default=1e-4)
+    parser.add_argument("--proj_dropout", type=float, default=0.3)
+    parser.add_argument("--lr", type=float, default=1e-4)
+    parser.add_argument("--weight_decay", type=float, default=0)
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--epochs", type=int, default=10)
-    parser.add_argument("--max_len", type=int, default=200)
+    parser.add_argument("--max_len", type=int, default=300)
     parser.add_argument("--min_freq", type=int, default=2)
     parser.add_argument("--kfolds", type=int, default=5)
     parser.add_argument("--seed", type=int, default=42)
