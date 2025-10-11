@@ -31,25 +31,33 @@ from peft import get_peft_model
 # === CONFIGURACIÓN BÁSICA ==================================
 # ============================================================
 
-MODEL_DIR = "models/BETO_MTL"           # Modelo multitarea original
-RUN_NAME = "BETO_MTL_LoRA_MeIA"         # Nombre del experimento actual
+BASE_MODEL_DIR = "models/BETO_local"    # Encoder base BETO (offline)
+MODEL_DIR = "models/BETO_MTL_SO"           # Modelo multitarea original
+RUN_NAME = "BETO_MTL_LoRA_MeIA"
 MAX_LEN = 256
 EPOCHS = 3
 BATCH_SIZE = 16
 LR = 2e-5
-USE_WANDB = False                       # Cambiar a True si deseas loggear
+USE_WANDB = False
 
 # ============================================================
 # === 1. CARGA DE DATOS Y TOKENIZACIÓN =======================
 # ============================================================
 
-print("\n📥 Cargando dataset MeIA para multitarea...")
+from accelerate import Accelerator
+acc = Accelerator()
+
+if acc.is_main_process:
+    print("📥 Cargando dataset MeIA para multitarea...")
 data = load_and_prepare_meia_for_mtl()
 train_dataset, eval_dataset = data["train"], data["eval"]
 label_mappings = data["label_mappings"]
 
-print("🔤 Cargando tokenizador...")
-tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
+# ------------------------------------------------------------
+# Tokenizador del modelo base BETO_local (offline)
+# ------------------------------------------------------------
+print(f"🔤 Cargando tokenizador desde {BASE_MODEL_DIR} ...")
+tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL_DIR)
 
 def tokenize_function(examples):
     return tokenizer(
@@ -64,84 +72,85 @@ train_dataset = train_dataset.map(tokenize_function, batched=True, remove_column
 eval_dataset = eval_dataset.map(tokenize_function, batched=True, remove_columns=["text"])
 
 # ============================================================
-# === 2. CARGA DEL MODELO MULTITAREA =========================
+# === 2. CARGA DEL MODELO MULTITAREA (USANDO BETO_LOCAL) =====
 # ============================================================
 
 from transformers import AutoConfig
 from safetensors.torch import load_file
 import torch
 
-print("\n🧠 Cargando modelo BETO_MTL preentrenado...")
+# --- Rutas de los modelos ---
+
+print("\n🧠 Cargando modelo BETO_MTL preentrenado (usando BETO_local como base)...")
 
 # ------------------------------------------------------------
-# Cargar configuración del modelo base BETO
+# Cargar configuración multitarea
 # ------------------------------------------------------------
 config = AutoConfig.from_pretrained(MODEL_DIR)
 
 # Crear instancia explícita del modelo multitarea
-# (evita que Transformers cargue erróneamente un BertModel plano)
+# Usa el encoder base BETO_local como punto de partida (idéntico al flujo original)
 model = MultiTaskModel(
     config=config,
-    model_name=None,  # No cargar pesos aquí
+    model_name=BASE_MODEL_DIR,  # ⚙️ encoder base BETO
     num_labels_polarity=len(label_mappings["polarity"]),
     num_labels_type=len(label_mappings["type"]),
     num_labels_town=len(label_mappings["town"]),
 )
 
 # ------------------------------------------------------------
-# Cargar pesos .safetensors del modelo multitarea
+# Cargar pesos multitarea (MTL) desde el archivo .safetensors
 # ------------------------------------------------------------
-
 state_path = os.path.join(MODEL_DIR, "model.safetensors")
 if not os.path.exists(state_path):
     raise FileNotFoundError(f"No se encontró el archivo de pesos en: {state_path}")
 
-# Cargar pesos en formato seguro .safetensors
 state_dict = load_file(state_path)
-
 missing, unexpected = model.load_state_dict(state_dict, strict=False)
 
-print(f"⚙️  Pesos cargados desde: {state_path}")
+print(f"⚙️  Pesos multitarea cargados desde: {state_path}")
 print(f"   🔹 Pesos faltantes: {len(missing)}")
 print(f"   🔹 Pesos inesperados: {len(unexpected)}")
-
-# Mostrar los primeros 5 pesos faltantes (si existen)
 if len(missing) > 0:
     print(f"   ↳ Ejemplo de pesos faltantes: {missing[:5]}")
 if len(unexpected) > 0:
     print(f"   ↳ Ejemplo de pesos inesperados: {unexpected[:5]}")
 
-# Confirmar que es efectivamente el modelo multitarea
+# Confirmar tipo y estructura
 print(f"✅ Modelo cargado correctamente: {type(model)}")
 print("Cabezas activas: Polarity, Type y Town")
 
 # ------------------------------------------------------------
-# Congelar pesos base (encoder) para aplicar LoRA después
+# Congelar el encoder antes de aplicar LoRA
 # ------------------------------------------------------------
 for name, param in model.named_parameters():
-    param.requires_grad = False
+    if name.startswith("transformer"):
+        param.requires_grad = False
+
+print("🔒 Encoder base congelado, listo para inyección LoRA.")
+
 
 # ============================================================
 # === 3. INYECCIÓN DE LoRA (APLICADA AL MODELO COMPLETO) ====
 # ============================================================
 from peft import LoraConfig, get_peft_model
 
-print("💡 Inyectando LoRA sobre todo el modelo multitarea (compatible con DDP)...")
+print("💡 Inyectando LoRA SOLO en el encoder (transformer)...")
 lora_config = LoraConfig(
     r=8,
     lora_alpha=16,
-    target_modules=["query", "value"],  # puedes añadir "key" si quieres cubrir QKV
+    target_modules=["query", "value"],  # opcional añadir "key"
     lora_dropout=0.05,
     bias="none",
-    task_type="SEQ_CLS",
+    task_type="FEATURE_EXTRACTION",     # <- neutro, no cambia la semántica
 )
 
-# ⚠️ LoRA al modelo completo, NO al submódulo encoder.
-model = get_peft_model(model, lora_config)
+# ⚠️ APLICAR AL ENCODER, NO AL MODELO ENTERO
+model.transformer = get_peft_model(model.transformer, lora_config)
 
-# (opcional) ver params entrenables
+# (opcional) ver params entrenables del encoder
 try:
-    model.print_trainable_parameters()
+    model.transformer.print_trainable_parameters()
 except Exception:
     pass
 
@@ -149,6 +158,44 @@ trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 total_params = sum(p.numel() for p in model.parameters())
 print(f"✅ Parámetros entrenables: {trainable_params:,} / {total_params:,} "
       f"({100*trainable_params/total_params:.3f}%)")
+
+# ============================================================
+# === VERIFICACIÓN DE ESTRUCTURA DEL MODELO + LORA ===========
+# ============================================================
+
+print("\n🔍 Verificando estructura del modelo tras inyección LoRA...\n")
+
+# Tipo principal del modelo
+print(f"🧠 Tipo de modelo principal: {type(model)}")
+
+# Si el modelo está envuelto por PEFT (LoRA)
+try:
+    from peft import PeftModel
+    if isinstance(model, PeftModel):
+        print("✅ LoRA aplicada correctamente (modelo es instancia de PeftModel)")
+        print(f"   ↳ Base model: {type(model.base_model)}")
+    else:
+        print("⚠️ El modelo no es una instancia de PeftModel (LoRA no aplicada o solo parcial)")
+except Exception as e:
+    print(f"❌ Error verificando PEFT: {e}")
+
+# Buscar si las capas query/value del encoder tienen adaptadores LoRA
+found_lora = []
+for name, module in model.named_modules():
+    if hasattr(module, "lora_A") or hasattr(module, "lora_B"):
+        found_lora.append(name)
+
+if found_lora:
+    print(f"✅ Se detectaron {len(found_lora)} capas con adaptadores LoRA.")
+    print("   Ejemplo de capas modificadas:")
+    for n in found_lora[:5]:
+        print(f"     - {n}")
+else:
+    print("⚠️ No se detectaron capas con adaptadores LoRA (inyección fallida o parcial)")
+
+print("\n===========================================================\n")
+
+
 
 # ============================================================
 # === 4. MÉTRICAS DE EVALUACIÓN ==============================
@@ -190,7 +237,7 @@ training_args = TrainingArguments(
     per_device_eval_batch_size=BATCH_SIZE,
     learning_rate=LR,
     weight_decay=0.01,
-    evaluation_strategy="epoch",
+    eval_strategy="epoch",
     save_strategy="epoch",
     load_best_model_at_end=True,
     metric_for_best_model="Score",
@@ -198,10 +245,14 @@ training_args = TrainingArguments(
     save_total_limit=1,
     report_to="wandb" if USE_WANDB else "none",
     fp16=torch.cuda.is_available(),
-    label_names=["polarity_label", "type_label", "town_label"],
     remove_unused_columns=False,
+    label_names=["polarity_label", "type_label", "town_label"],
     ddp_find_unused_parameters=False,
 )
+print("🧪 Tipos antes de entrenar:")
+print("   - type(model):", type(model))
+print("   - type(model.transformer):", type(model.transformer))
+print("   - hasattr(model, 'forward'):", hasattr(model, 'forward'))
 
 trainer = MultiTaskTrainer(
     model=model,

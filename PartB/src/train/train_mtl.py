@@ -36,121 +36,101 @@ class MultiTaskModel(PreTrainedModel):
         self.num_labels_town = num_labels_town
 
         if model_name is None:
-            self.transformer = AutoModel.from_config(config)   # <- 100% offline
+            self.transformer = AutoModel.from_config(config)   # 100% offline
         else:
             self.transformer = AutoModel.from_pretrained(model_name, config=config)
 
-        
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
-        
         self.classifier_polarity = nn.Linear(config.hidden_size, self.num_labels_polarity)
-        self.classifier_type = nn.Linear(config.hidden_size, self.num_labels_type)
-        self.classifier_town = nn.Linear(config.hidden_size, self.num_labels_town)
+        self.classifier_type    = nn.Linear(config.hidden_size, self.num_labels_type)
+        self.classifier_town    = nn.Linear(config.hidden_size, self.num_labels_town)
 
-def forward(
-    self,
-    input_ids=None,
-    attention_mask=None,
-    token_type_ids=None,
-    polarity_label=None,
-    type_label=None,
-    town_label=None,
-    return_dict=None,
-    **kwargs,  # <- esto captura cualquier argumento extra (como 'labels')
-):
-    """
-    Forward multitarea compatible con LoRA y Hugging Face Trainer.
+    def forward(
+        self,
+        input_ids=None,
+        attention_mask=None,
+        token_type_ids=None,
+        polarity_label=None,
+        type_label=None,
+        town_label=None,
+        return_dict=None,
+        **kwargs,  # aceptamos extras, pero NO los propagamos al encoder
+    ):
+        # use_return_dict como en HF
+        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-    - Recibe los tres conjuntos de etiquetas (polarity, type, town)
-    - Calcula las tres pérdidas y la loss combinada ponderada 2:1:3
-    - Evita pasar argumentos no válidos ('labels', etc.) al encoder
-    """
+        # --- SOLO claves del encoder (nada de labels u otros kwargs) ---
+        encoder_kwargs = {}
+        if input_ids is not None:
+            encoder_kwargs["input_ids"] = input_ids
+        if attention_mask is not None:
+            encoder_kwargs["attention_mask"] = attention_mask
+        if token_type_ids is not None:
+            encoder_kwargs["token_type_ids"] = token_type_ids
+        encoder_kwargs["return_dict"] = return_dict
 
-    # Asegurar que siempre regrese un diccionario
-    return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        # Llamada estricta al encoder (PEFT o no) sin kwargs ajenos
+        outputs = self.transformer(**encoder_kwargs)
 
-    # --- 🔹 Filtrar argumentos válidos para el encoder ---
-    encoder_kwargs = {
-        "input_ids": input_ids,
-        "attention_mask": attention_mask,
-        "token_type_ids": token_type_ids,
-        "return_dict": return_dict,
-    }
+        # pooled_output (pooler si existe, CLS si no)
+        if isinstance(outputs, dict):
+            pooled_output = outputs.get("pooler_output", None)
+            if pooled_output is None:
+                pooled_output = outputs["last_hidden_state"][:, 0]
+        else:
+            pooled_output = outputs[1]
 
-    # Solo mantener los que no sean None
-    encoder_kwargs = {k: v for k, v in encoder_kwargs.items() if v is not None}
+        pooled_output = self.dropout(pooled_output)
 
-    # === Paso por el encoder ===
-    # Evita pasar accidentalmente 'labels' al encoder (causa del error original)
-    outputs = self.transformer(**encoder_kwargs)
+        logits_polarity = self.classifier_polarity(pooled_output)
+        logits_type     = self.classifier_type(pooled_output)
+        logits_town     = self.classifier_town(pooled_output)
 
-    # === Representación de la secuencia ===
-    # Hugging Face BERT devuelve (last_hidden_state, pooled_output, ...)
-    if isinstance(outputs, dict):
-        pooled_output = outputs.get("pooler_output", None)
-        if pooled_output is None:
-            # Algunos modelos (como RoBERTa) no usan pooler_output
-            pooled_output = outputs["last_hidden_state"][:, 0]
-    else:
-        pooled_output = outputs[1]  # Compatibilidad con tuple outputs
+        # Pérdida multitarea (2:1:3)
+        loss = None
+        if (polarity_label is not None) and (type_label is not None) and (town_label is not None):
+            loss_fct = torch.nn.CrossEntropyLoss()
+            loss_polarity = loss_fct(logits_polarity.view(-1, self.num_labels_polarity), polarity_label.view(-1))
+            loss_type     = loss_fct(logits_type.view(-1, self.num_labels_type),       type_label.view(-1))
+            loss_town     = loss_fct(logits_town.view(-1, self.num_labels_town),       town_label.view(-1))
+            loss = (2*loss_polarity + 1*loss_type + 3*loss_town) / 6.0
 
-    pooled_output = self.dropout(pooled_output)
+        if not return_dict:
+            output = (logits_polarity, logits_type, logits_town)
+            return (loss, output) if loss is not None else (None, output)
 
-    # === Cálculo de logits para cada tarea ===
-    logits_polarity = self.classifier_polarity(pooled_output)
-    logits_type = self.classifier_type(pooled_output)
-    logits_town = self.classifier_town(pooled_output)
+        return {"loss": loss, "logits": (logits_polarity, logits_type, logits_town)}
 
-    # === Cálculo de pérdida multitarea ===
-    loss = None
-    if polarity_label is not None and type_label is not None and town_label is not None:
-        loss_fct = torch.nn.CrossEntropyLoss()
-        loss_polarity = loss_fct(
-            logits_polarity.view(-1, self.num_labels_polarity),
-            polarity_label.view(-1)
-        )
-        loss_type = loss_fct(
-            logits_type.view(-1, self.num_labels_type),
-            type_label.view(-1)
-        )
-        loss_town = loss_fct(
-            logits_town.view(-1, self.num_labels_town),
-            town_label.view(-1)
-        )
-
-        # Ponderación 2:1:3 (como en el MTL original)
-        loss = (2 * loss_polarity + 1 * loss_type + 3 * loss_town) / 6.0
-
-    # === Formato de salida compatible con Trainer ===
-    if not return_dict:
-        output = (logits_polarity, logits_type, logits_town)
-        return (loss, output) if loss is not None else (None, output)
-
-    return {
-        "loss": loss,
-        "logits": (logits_polarity, logits_type, logits_town),
-    }
 
 
 # --- Custom Trainer for Multi-Task Learning ---
-# ¡NUEVO! Hacemos el Trainer explícito para que siempre funcione.
+
 class MultiTaskTrainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False):
-        outputs = model(**inputs)
-        loss = outputs["loss"]
+        # Sacar labels para que no viajen en **inputs
+        polarity_label = inputs.pop("polarity_label", None)
+        type_label     = inputs.pop("type_label", None)
+        town_label     = inputs.pop("town_label", None)
+
+        outputs = model(
+            **inputs,
+            polarity_label=polarity_label,
+            type_label=type_label,
+            town_label=town_label,
+        )
+        loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
         return (loss, outputs) if return_outputs else loss
-        
+
     def prediction_step(self, model, inputs, prediction_loss_only, ignore_keys=None):
         inputs = self._prepare_inputs(inputs)
+        # Quitamos labels del dict para no pasarlas al modelo
+        labels = tuple(inputs.pop(name, None) for name in self.label_names)
         with torch.no_grad():
             outputs = model(**inputs)
-            # Para la predicción, la pérdida será None, lo cual es correcto.
             loss = outputs.get("loss")
-            # Los logits son la tupla que empaquetamos en el forward.
             logits = outputs.get("logits")
-            # Las etiquetas se pasan por separado.
-            labels = tuple(inputs.get(name) for name in self.label_names)
         return (loss, logits, labels)
+
 
 
 # --- El resto del archivo no necesita cambios ---
