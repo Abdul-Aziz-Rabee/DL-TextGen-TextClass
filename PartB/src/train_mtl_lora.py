@@ -35,7 +35,7 @@ BASE_MODEL_DIR = "models/BETO_local"    # Encoder base BETO (offline)
 MODEL_DIR = "models/BETO_MTL_SO"           # Modelo multitarea original
 RUN_NAME = "BETO_MTL_LoRA_MeIA"
 MAX_LEN = 256
-EPOCHS = 3
+EPOCHS = 5
 BATCH_SIZE = 16
 LR = 2e-5
 USE_WANDB = False
@@ -52,6 +52,26 @@ if acc.is_main_process:
 data = load_and_prepare_meia_for_mtl()
 train_dataset, eval_dataset = data["train"], data["eval"]
 label_mappings = data["label_mappings"]
+
+# === Derivar número de clases correctamente con soporte a formatos nuevos/viejos ===
+def _num_classes(mapping):
+    # Formato nuevo: {"label2id": {...}, "id2label": {...}}
+    if isinstance(mapping, dict) and "id2label" in mapping:
+        id2label = mapping["id2label"]
+        # claves pueden ser "0","1",... o ints
+        return len(id2label)
+    # Formato viejo: {0:"Hotel",1:"Restaurant",...} o lista ["Hotel",...]
+    if isinstance(mapping, dict):
+        return len(mapping)
+    if isinstance(mapping, list):
+        return len(mapping)
+    raise ValueError(f"Formato de mapping no soportado: {type(mapping)}")
+
+num_labels_polarity = _num_classes(label_mappings["polarity"])
+num_labels_type     = _num_classes(label_mappings["type"])
+num_labels_town     = _num_classes(label_mappings["town"])
+
+print(f"🔢 Clases -> polarity:{num_labels_polarity} | type:{num_labels_type} | town:{num_labels_town}")
 
 # ------------------------------------------------------------
 # Tokenizador del modelo base BETO_local (offline)
@@ -93,9 +113,9 @@ config = AutoConfig.from_pretrained(MODEL_DIR)
 model = MultiTaskModel(
     config=config,
     model_name=BASE_MODEL_DIR,  # ⚙️ encoder base BETO
-    num_labels_polarity=len(label_mappings["polarity"]),
-    num_labels_type=len(label_mappings["type"]),
-    num_labels_town=len(label_mappings["town"]),
+    num_labels_polarity=num_labels_polarity,
+    num_labels_type=num_labels_type,
+    num_labels_town=num_labels_town,
 )
 
 # ------------------------------------------------------------

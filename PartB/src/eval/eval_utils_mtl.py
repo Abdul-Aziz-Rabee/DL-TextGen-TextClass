@@ -1,5 +1,4 @@
 # src/eval_utils_mtl.py
-
 import os
 import json
 import numpy as np
@@ -19,11 +18,11 @@ def compute_and_save_mtl_metrics(
     para un modelo de aprendizaje multitarea, incluyendo el "Score" final de la competencia.
 
     Args:
-        predictions (tuple): Una tupla con los arrays de logits para cada tarea (polarity, type, town).
-        labels (tuple): Una tupla con los arrays de etiquetas verdaderas para cada tarea.
-        run_name (str): Un nombre único para la ejecución.
-        label_mappings (dict): El diccionario que mapea los índices de las etiquetas a sus nombres.
-        results_dir (str): Directorio donde se guardarán los resultados.
+        predictions (tuple): logits por tarea (polarity, type, town)
+        labels (tuple): etiquetas verdaderas por tarea
+        run_name (str): nombre de la ejecución
+        label_mappings (dict): diccionario con los mapeos label2id e id2label
+        results_dir (str): carpeta de salida
     """
     os.makedirs(results_dir, exist_ok=True)
 
@@ -34,16 +33,13 @@ def compute_and_save_mtl_metrics(
     preds_type = np.argmax(logits_type, axis=1)
     preds_town = np.argmax(logits_town, axis=1)
 
-    # --- Calcular Métricas Individuales (F1 Ponderado) ---
+    # --- Métricas por tarea ---
     f1_polarity = f1_score(labels_polarity, preds_polarity, average="weighted")
     f1_type = f1_score(labels_type, preds_type, average="weighted")
     f1_town = f1_score(labels_town, preds_town, average="weighted")
 
-    # --- ¡NUEVO! Calcular el "Score" Oficial de la Competencia ---
-    # Ponderación: 2x Polarity, 1x Type, 3x Town
     final_score = (2 * f1_polarity + 1 * f1_type + 3 * f1_town) / 6.0
     
-    # --- Guardar todas las métricas en un diccionario ---
     metrics = {
         "Official_Score": final_score,
         "polarity_weighted_f1": f1_polarity,
@@ -64,35 +60,51 @@ def compute_and_save_mtl_metrics(
     print(f"  F1 Type:     {metrics['type_weighted_f1']:.4f}")
     print(f"  F1 Town:     {metrics['town_weighted_f1']:.4f}")
 
-    # Guardar métricas en un archivo JSON
+    # Guardar métricas en JSON
     metrics_path = os.path.join(results_dir, f"{run_name}_metrics.json")
-    with open(metrics_path, 'w') as f:
-        json.dump(metrics, f, indent=4)
+    with open(metrics_path, 'w', encoding="utf-8") as f:
+        json.dump(metrics, f, indent=4, ensure_ascii=False)
     print(f"\nMétricas guardadas en: {metrics_path}")
 
-    # --- Generar y Guardar Matrices de Confusión ---
+    # --- Obtener nombres de etiquetas (id2label) ---
+    def get_labels(mapping_dict):
+        # Si viene en formato nuevo con id2label
+        if isinstance(mapping_dict, dict) and "id2label" in mapping_dict:
+            id2label = mapping_dict["id2label"]
+            # ordenar por id
+            sorted_labels = [id2label[str(i)] if str(i) in id2label else id2label[i] for i in sorted(map(int, id2label.keys()))]
+            return sorted_labels
+        # Si viene en formato antiguo (label2id simple)
+        elif isinstance(mapping_dict, dict):
+            return list(mapping_dict.values())
+        # Si es lista simple
+        elif isinstance(mapping_dict, list):
+            return mapping_dict
+        else:
+            return []
+
+    labels_polarity_names = get_labels(label_mappings["polarity"])
+    labels_type_names = get_labels(label_mappings["type"])
+    labels_town_names = get_labels(label_mappings["town"])
+
+    # --- Generar matrices de confusión con nombres legibles ---
     task_info = {
-        "polarity": (labels_polarity, preds_polarity, list(label_mappings['polarity'].values())),
-        "type": (labels_type, preds_type, list(label_mappings['type'].values())),
-        "town": (labels_town, preds_town, list(label_mappings['town'].values()))
+        "polarity": (labels_polarity, preds_polarity, labels_polarity_names),
+        "type": (labels_type, preds_type, labels_type_names),
+        "town": (labels_town, preds_town, labels_town_names)
     }
 
     for task_name, (y_true, y_pred, display_labels) in task_info.items():
         cm = confusion_matrix(y_true, y_pred)
-        
-        figsize = (20, 18) if task_name == 'town' else (10, 8)
-        
+        figsize = (20, 18) if task_name == "town" else (10, 8)
         plt.figure(figsize=figsize)
-        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
                     xticklabels=display_labels, yticklabels=display_labels)
-        plt.title(f'Matriz de Confusión - {task_name.capitalize()} - {run_name}')
-        plt.ylabel('Etiqueta Verdadera')
-        plt.xlabel('Etiqueta Predicha')
+        plt.title(f"Matriz de Confusión - {task_name.capitalize()} - {run_name}")
+        plt.ylabel("Etiqueta Verdadera")
+        plt.xlabel("Etiqueta Predicha")
         plt.tight_layout()
-        
         plot_path = os.path.join(results_dir, f"{run_name}_{task_name}_confusion_matrix.png")
         plt.savefig(plot_path)
         print(f"Matriz de confusión para '{task_name}' guardada en: {plot_path}")
         plt.close()
-
-
