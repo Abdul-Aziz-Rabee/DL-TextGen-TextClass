@@ -44,7 +44,7 @@ def load_and_prepare_meia_for_mtl(
     print(f"✅ Datos cargados: {df.shape[0]} reseñas")
 
     # Limpieza y normalización
-    df["Review"] = df["Review"].apply(lambda x: preprocess_text(x, use_limpieza_basica=False))
+    df["Review"] = df["Review"].apply(lambda x: preprocess_text(x, use_limpieza_basica=False, metodo="ftfy"))
 
     df["text"] = df["Review"].str.strip()
 
