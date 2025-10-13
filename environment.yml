@@ -20,10 +20,12 @@ dependencies:
   - spacy
   - pip:
       - unidecode
-      - transformers>=4.38.0
+      - transformers == 4.38.0
       - datasets
       - lyricsgenius
       - python-dotenv
       - peft
       - accelerate
       - bitsandbytes
+      - nltk
+      - wandb
